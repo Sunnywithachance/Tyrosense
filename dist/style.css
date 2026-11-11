@@ -134,3 +134,16 @@ dialog.camera-screen {
   .camera-detection-note { display: none; }
   .camera-permission-icon { display: none; }
 }
+
+/* Play once when the home view mounts, ending at the original patch angle. */
+.hero--home .patch {
+  transform-origin: center;
+  animation: home-patch-spin 1.6s cubic-bezier(.4, 0, .2, 1) 1;
+}
+@keyframes home-patch-spin {
+  from { transform: rotate(-22deg); }
+  to { transform: rotate(338deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero--home .patch { animation: none; }
+}
