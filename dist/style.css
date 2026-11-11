@@ -135,15 +135,34 @@ dialog.camera-screen {
   .camera-permission-icon { display: none; }
 }
 
-/* Play once when the home view mounts, ending at the original patch angle. */
-.hero--home .patch {
-  transform-origin: center;
-  animation: home-patch-spin 1.6s cubic-bezier(.4, 0, .2, 1) 1;
+/* Two faces make one vertical-axis turn when the home view mounts. */
+.patch-model {
+  width: 260px;
+  height: 210px;
+  perspective: 850px;
+  position: relative;
+  z-index: 1;
 }
-@keyframes home-patch-spin {
-  from { transform: rotate(-22deg); }
-  to { transform: rotate(338deg); }
+.patch-rotor {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: home-patch-turn 2.4s cubic-bezier(.4, 0, .2, 1) 1;
+}
+.patch-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.patch-front { transform: translateZ(1.5px); }
+.patch-back { transform: rotateY(180deg) translateZ(1.5px); }
+.patch-back .patch { transform: rotate(22deg); }
+@keyframes home-patch-turn {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero--home .patch { animation: none; }
+  .patch-rotor { animation: none; }
 }
