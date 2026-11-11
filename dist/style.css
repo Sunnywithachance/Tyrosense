@@ -67,3 +67,70 @@ dialog.navigation-menu {
 @media (min-width: 600px) {
   .menu-content { padding-top: 32px; padding-bottom: 32px; }
 }
+
+/* Live camera is isolated from the app layout and owns its video lifecycle. */
+dialog.camera-screen {
+  position: fixed; inset: 0; width: 100%; max-width: none;
+  height: 100dvh; max-height: none; margin: 0; padding: 0;
+  border: 0; border-radius: 0; background: #211e1a; color: #fff;
+  overflow: hidden; color-scheme: dark;
+}
+.camera-screen::backdrop { background: #211e1a; }
+.camera-screen [hidden] { display: none !important; }
+.camera-video, .camera-review, .camera-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+.camera-video { object-fit: cover; }
+.camera-review { object-fit: contain; background: #211e1a; padding: 105px 0 190px; }
+.camera-overlay { pointer-events: none; }
+.camera-guide { fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 1px 4px #0004); }
+.camera-detection { fill: #7ed89b12; stroke: #83edab; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 1px 4px #0004); }
+.camera-top {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) 38px max(20px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(#0009, transparent);
+}
+.camera-top > div { text-align: center; }
+.camera-top p { font-size: 9px; letter-spacing: 1.5px; color: #fff9; margin-bottom: 7px; }
+.camera-top h2 { font-size: 17px; color: #fff; }
+.camera-top-spacer { width: 44px; }
+.camera-icon { width: 44px; height: 44px; border: 1px solid #fff5; border-radius: 50%; background: #ffffff18; color: white; display: grid; place-items: center; flex-shrink: 0; cursor: pointer; }
+.camera-icon svg, .camera-permission-icon svg, .camera-review-actions svg { width: 23px; height: 23px; }
+.camera-icon[aria-pressed="true"] { background: #d59c4f; color: #211e1a; }
+.camera-permission { position: absolute; inset: 105px 24px 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow-y: auto; }
+.camera-permission-icon { width: 65px; height: 65px; background: #ffffff10; border: 1px solid #fff3; border-radius: 22px; display: grid; place-items: center; margin-bottom: 24px; }
+.camera-permission h2 { font-size: 34px; line-height: 1.2; font-weight: 500; letter-spacing: -1px; }
+.camera-permission-copy { max-width: 300px; margin: 18px 0 24px; font-size: 13px; line-height: 1.7; color: #d0c5b8; }
+.camera-permission .primary { max-width: 290px; }
+.camera-error { font-size: 12px; line-height: 1.6; color: #f4c8a4; max-width: 320px; margin-top: 15px; }
+.camera-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 32px max(24px, env(safe-area-inset-right, 0px)) max(20px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px)); background: linear-gradient(transparent,#000b 35%,#000d); text-align: center; }
+.camera-status { display: inline-block; padding: 10px 15px; border: 1px solid #fff5; border-radius: 30px; background: #211e1a80; color: white; font-size: 12px; }
+.camera-status.detected { background: #254b36e6; border-color: #83edab; color: #b8ffce; }
+.camera-tip { font-size: 12px; color: #fff; margin: 12px 0 6px; }
+.camera-detection-note { font-size: 9px; color: #ffffffb0; }
+.camera-controls { display: flex; justify-content: space-between; align-items: center; max-width: 330px; margin: 24px auto 0; }
+.camera-shutter { width: 78px; height: 78px; border: 2px solid #fff; padding: 5px; border-radius: 50%; background: transparent; }
+.camera-shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #fff; border: 2px solid #dfae7f; }
+.camera-shutter:active { transform: scale(.95); }
+.camera-library { position: relative; overflow: hidden; }
+.camera-library input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.camera-library:focus-within { outline: 3px solid #dfae7f; outline-offset: 4px; }
+.camera-footer-note { font-size: 10px; color: #fff9; margin-top: 20px; }
+.camera-zoom { display: flex; align-items: center; gap: 12px; max-width: 250px; margin: 15px auto 0; font-size: 11px; color: #fff; }
+.camera-zoom input { width: 100%; accent-color: #dfae7f; min-width: 0; }
+.camera-zoom output { white-space: nowrap; }
+.camera-review-copy { max-width: 330px; margin: 0 auto 20px; font-size: 12px; line-height: 1.6; }
+.camera-review-actions { display: flex; align-items: center; gap: 12px; max-width: 380px; margin: auto; }
+.camera-review-actions .secondary { color: white; border-color: #fff6; flex: 1; }
+.camera-review-actions .primary { flex: 2; }
+.capture-slot { width: 100%; }
+.capture-slot img { max-height: 300px; object-fit: contain; }
+.capture-slot .icon { width: 40px; height: 40px; }
+.capture-slot .frame { display: none; }
+.capture-library { display: block; margin: 10px auto 0; width: fit-content; font-size: 12px; color: var(--accent); }
+@media (max-height: 650px) {
+  .camera-top { padding-bottom: 16px; }
+  .camera-bottom { padding-top: 12px; }
+  .camera-controls { margin-top: 14px; }
+  .camera-detection-note { display: none; }
+  .camera-permission-icon { display: none; }
+}

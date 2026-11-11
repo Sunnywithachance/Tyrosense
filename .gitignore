@@ -14,3 +14,7 @@ venv/
 # Python cache
 __pycache__/
 *.py[cod]
+
+# Browser test artifacts
+/test-results/
+/playwright-report/

@@ -7,6 +7,10 @@
     "dev": "node server.mjs",
     "start": "node server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check dist/app.js && node --check dist/analysis.js"
+    "check": "node --check dist/app.js && node --check dist/analysis.js && node --check dist/camera.js && node --check dist/detection.js",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
   }
 }

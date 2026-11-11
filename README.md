@@ -49,7 +49,9 @@ npm test
 ## Implemented prototype
 
 - Register lesions with names, locations, and notes.
-- Capture or upload baseline and after photographs.
+- Capture baseline and after photographs in a dedicated live camera screen, or choose them from a photo library.
+- Request camera permission explicitly, show square alignment guides and a green outline for stable square candidates, then review or retake the crop.
+- Offer camera switching, plus zoom and a camera light when supported by the device and browser.
 - Persist a reaction timer across page reloads using an absolute deadline.
 - Compare the mean RGB colour in the central 40% of each image.
 - Save comparisons and lesion photo journals in IndexedDB in the current browser.
@@ -62,7 +64,7 @@ The app uses no backend or cloud photo storage. Data is local to each browser an
 
 ## Analysis limits and next steps
 
-RGB distance is a descriptive image metric, not a calibrated enzyme activity measurement. This prototype does not identify patch boundaries, normalize lighting, register images, or classify lesions. It intentionally does not display numerical TYR concentrations or activity categories.
+RGB distance is a descriptive image metric, not a calibrated enzyme activity measurement. The camera uses lightweight intensity and edge contours to highlight square-shaped candidates, with three-frame stability before showing green. This is an experimental alignment aid, not identification of a TyroSense patch. It can miss translucent patches or highlight unrelated squares. Detection needs testing on actual patches and representative lighting and skin tones. The prototype does not normalize lighting, register images, or classify lesions. It intentionally does not display numerical TYR concentrations or activity categories.
 
 The next analysis milestone is a controlled imaging protocol, reference colours, a defined reaction region, and paired photographs with known TYR activities. Calibration and evaluation should use separate datasets, with uncertainty and image quality checks before activity ranges are shown.
 
@@ -73,3 +75,22 @@ The next analysis milestone is a controlled imaging protocol, reference colours,
 - `server.mjs`: dependency-free local development server.
 - `tests/`: calculation and timer tests.
 - `.openai/hosting.json`: private Sites deployment configuration.
+
+
+## Custom camera
+
+The before and after capture buttons open a full-screen camera dialog. Camera access starts only when the user taps **Enable camera**; the browser then handles its permission prompt. Use HTTPS (including the Netlify URL) or localhost. HTTP addresses on a local Wi-Fi network do not qualify for live camera access.
+
+A stable square candidate is outlined in green. Capture remains available without detection: the white guide supplies a manual square crop. When detection is stable at capture time, the saved image is cropped around the candidate with a small margin. Both crops are shown for review before use; they are not perspective-corrected. Library imports retain the full photograph. The colour analysis continues to sample the central 40% of the saved image; match the reaction area, crop, lighting, and orientation between both photographs. Older records and library imports may have different framing.
+
+The app requests video only, with the rear camera preferred. Video stays local and is not recorded. Tracks stop on capture/review, close, camera switch, hiding the page, and leaving the page. Camera light and zoom controls appear only when the camera exposes those capabilities. Real Safari/iPhone permission handling, hardware controls, and detection performance must still be verified on a physical phone.
+
+Browser camera tests use simulated input:
+
+```sh
+npm install
+npx playwright install chromium
+npm run test:browser
+```
+
+The tests cover explicit activation, real getUserMedia with simulated hardware, square detection, capture/retake, both test photos and result saving, denied permission and library fallback, retry, manual capture, Escape, background/resume, and a permission request that resolves after closing.
