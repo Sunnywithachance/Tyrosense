@@ -18,7 +18,7 @@ export function meanRGB(data) {
   return sum.map(v=>v/n);
 }
 export function compareRGB(before,after){
-  if([...before,...after].length!==6||[...before,...after].some(v=>!Number.isFinite(v)||v<0||v>255))throw new Error('Invalid RGB values');
+  if([...before,...after].length!==6||[...before,...after].some(v=>!Number.isFinite(v)||v<0||v>255))throw new Error('Invalid colour values');
   return {distance:Math.hypot(...after.map((v,i)=>v-before[i])),before,after};
 }
 

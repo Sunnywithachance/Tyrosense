@@ -49,7 +49,7 @@ function openMenu(){
 const notice=()=>`<p class="note">${icon('info')}<span>Research prototype for tracking patch colour changes.</span></p>`;
 function lesionName(lid){return state.lesions.find(l=>l.id===lid)?.name||'Removed lesion';}
 function empty(title,description,action,label){return `<div class="card empty"><div class="tile-icon">${icon('leaf')}</div><h3>${title}</h3><p class="sub">${description}</p>${action?`<button class="secondary" data-action="${action}">${icon('plus')}${label}</button>`:''}</div>`;}
-function resultRow(r){return `<button class="card row between record" data-result="${r.id}"><div class="row"><div class="tile-icon">${icon('scan')}</div><div><h3>${esc(lesionName(r.lesionId))}</h3><p class="small">${date(r.createdAt)}${r.demo?' · Sample data':''}</p></div></div><div><span class="badge">${r.comparison.distance.toFixed(1)} RGB</span></div></button>`;}
+function resultRow(r){return `<button class="card row between record" data-result="${r.id}"><div class="row"><div class="tile-icon">${icon('scan')}</div><div><h3>${esc(lesionName(r.lesionId))}</h3><p class="small">${date(r.createdAt)}${r.demo?' · Sample data':''}</p></div></div><div><span class="badge">Colour shift ${r.comparison.distance.toFixed(1)}</span></div></button>`;}
 function readingChart(records) {
   const maxDistance=Math.max(...records.map(r=>r.comparison.distance));
   const scale=Math.max(20,Math.ceil(maxDistance/20)*20);
@@ -61,8 +61,8 @@ function readingChart(records) {
     y:28+120*(1-record.comparison.distance/scale),
   }));
   return `<section class="card reading-chart" aria-labelledby="reading-chart-title">
-    <h3 id="reading-chart-title">Colour change over time</h3>
-    <p class="small reading-chart-unit">RGB difference</p>
+    <h3 id="reading-chart-title">Colour shift over time</h3>
+    <p class="small reading-chart-unit">Shift score</p>
     <div class="reading-chart-grid">
       <div class="reading-chart-axis" aria-hidden="true">
         ${ticks.map(({value,y})=>`<span style="top:${y}px">${value}</span>`).join('')}
@@ -75,7 +75,7 @@ function readingChart(records) {
           </svg>
           ${points.map(({record,x,y})=>{
             const value=record.comparison.distance.toFixed(1);
-            const testLabel=`${record.demo?'Sample test':'Test'} on ${date(record.createdAt)}, ${value} RGB difference`;
+            const testLabel=`${record.demo?'Sample test':'Test'} on ${date(record.createdAt)}, colour shift of ${value}`;
             return `<button type="button" class="reading-chart-point" style="left:${x}%;top:${y}px" data-result="${record.id}" aria-label="${esc(testLabel)}">
               <span class="reading-chart-value" aria-hidden="true">${value}</span>
               <span class="reading-chart-dot" aria-hidden="true"></span>
@@ -126,10 +126,10 @@ function resultView(){
     <div class="photo-pair"><figure><img src="${r.before.image}" alt="Before patch"><figcaption>BEFORE · baseline</figcaption></figure><figure><img src="${r.after.image}" alt="After patch"><figcaption>AFTER · reaction</figcaption></figure></div>
     ${referenceCard(r.comparison)}
     <div class="card">
-      <h3>Image colour difference</h3>
-      <div class="metric">${distance.toFixed(1)} <span style="font-size:13px;letter-spacing:0">RGB units</span></div>
+      <h3>Colour shift</h3>
+      <div class="metric">${distance.toFixed(1)}</div>
       <div class="row"><span class="swatch" style="background:rgb(${before.join(',')})"></span><span class="small">Before</span><span>→</span><span class="swatch" style="background:rgb(${after.join(',')})"></span><span class="small">After</span></div>
-      <p class="small spaced">Distance between the average colours in the central 40% of the two photographs.</p>
+      <p class="small spaced">The score measures how much the average colour changed between the central 40% of the before and after photos.</p>
     </div>
     ${r.early?'<div class="inline-notice">Captured before the selected waiting period ended. Prototype test only.</div>':''}
     ${draft.result===r?`<button class="primary" data-action="save-result">${icon('check')}Save to lesion history</button>`:`<button class="secondary" data-action="export-result">${icon('export')}Download this record</button>`}${notice()}`;
@@ -146,7 +146,7 @@ function report(results=state.results){
   return JSON.stringify({
     app:'TyroSense capstone prototype',
     exportedAt:new Date().toISOString(),
-    analysis:'The before photo anchors the 0 swatch. The closest reference label matches the signed RGB change between the central regions of the two photos.',
+    analysis:'The before photo sets the 0 reference. The closest swatch matches the direction and amount of the colour shift between the central regions of the two photos.',
     patchColourReferences,
     lesions:state.lesions,
     results:results.map(r=>({...r,referenceMatches:matchPatchChange(r.comparison.before,r.comparison.after)})),

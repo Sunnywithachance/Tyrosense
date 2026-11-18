@@ -61,7 +61,7 @@ test('requests camera only after Enable; detects square, reviews, retakes and sa
   await page.getByRole('button',{name:'Save to lesion history'}).click();
   const downloadButton=page.getByRole('button',{name:'Download this record'});
   await expect(downloadButton).toBeVisible();
-  await expect(page.getByText('Image colour difference')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Colour shift',exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Closest reference colour change'})).toBeVisible();
   await expect(page.locator('.reference-matches')).toHaveText('Before 0→After 50');
   const chart=page.getByRole('list',{name:'Patch colour reference chart'});
@@ -77,6 +77,7 @@ test('requests camera only after Enable; detects square, reviews, retakes and sa
   await downloadButton.click();
   const download=await downloadPromise;
   const exported=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(exported.analysis).toContain('colour shift');
   expect(exported.results[0].referenceMatches).toEqual({before:'0',after:'50'});
   const saved=await page.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('tyrosense',1);r.onsuccess=()=>{const q=r.result.transaction('data').objectStore('data').get('workspace');q.onsuccess=()=>resolve(q.result);};}));
   expect(saved.results).toHaveLength(1);expect(saved.current).toBeNull();

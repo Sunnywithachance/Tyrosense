@@ -32,14 +32,16 @@ test('journal plots saved tests for the selected lesion in date order',async({pa
   });
   await page.reload();
   await page.getByRole('button',{name:/Lesion journal/}).click();
-  const chart=page.getByRole('region',{name:'Colour change over time'});
+  const chart=page.getByRole('region',{name:'Colour shift over time'});
 
   await page.getByRole('button',{name:/Shoulder/}).click();
+  await expect(page.getByRole('button',{name:/Shoulder.*Colour shift 30\.0/})).toBeVisible();
   await expect(chart.getByRole('button')).toHaveText(['10.0','30.0','20.0']);
   await expect(chart.locator('polyline')).toBeVisible();
-  await chart.getByRole('button',{name:/30\.0 RGB difference/}).click();
+  await chart.getByRole('button',{name:/colour shift of 30\.0/}).click();
   await expect(page.getByRole('heading',{name:'Patch comparison'})).toBeVisible();
-  await expect(page.locator('.metric')).toHaveText('30.0 RGB units');
+  await expect(page.getByRole('heading',{name:'Colour shift',exact:true})).toBeVisible();
+  await expect(page.locator('.metric')).toHaveText('30.0');
   await page.getByRole('button',{name:'Back to lesion',exact:true}).click();
   await expect(chart.getByRole('button')).toHaveCount(3);
 
