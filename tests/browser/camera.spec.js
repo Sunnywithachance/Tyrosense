@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
 
 async function mockCamera(page,{square=true}={}) {
   await page.addInitScript(({square})=>{
@@ -9,7 +10,7 @@ async function mockCamera(page,{square=true}={}) {
       if(window.cameraMode==='pending')await new Promise(resolve=>window.releaseCamera=resolve);
       const canvas=document.createElement('canvas');canvas.width=640;canvas.height=960;
       const ctx=canvas.getContext('2d');
-      function draw(){ctx.fillStyle='#c7a68d';ctx.fillRect(0,0,640,960);if(square){ctx.fillStyle='#64432d';ctx.fillRect(195,355,250,250);}}
+      function draw(){ctx.fillStyle='#c7a68d';ctx.fillRect(0,0,640,960);if(square){ctx.fillStyle=window.patchColour??'#64432d';ctx.fillRect(195,355,250,250);}}
       draw();const timer=setInterval(draw,100),stream=canvas.captureStream(10);
       stream.getTracks().forEach(track=>{window.cameraTracks.push(track);const stop=track.stop.bind(track);track.stop=()=>{clearInterval(timer);stop();};});
       return stream;
@@ -35,6 +36,7 @@ test('requests camera only after Enable; detects square, reviews, retakes and sa
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await mockCamera(page);await baseline(page);
   expect(await page.evaluate(()=>window.cameraCalls)).toBe(0);
+  await page.evaluate(()=>{window.patchColour='#a08464';});
   await enable(page);
   await expect(page.locator('.camera-detection')).toBeVisible();
   await expect(page.locator('.camera-status')).toHaveText(/Square candidate detected/);
@@ -51,12 +53,23 @@ test('requests camera only after Enable; detects square, reviews, retakes and sa
   await page.getByRole('button',{name:'Save baseline & start timer'}).click();
   await page.getByRole('button',{name:'Capture early for prototype testing'}).click();
   await page.getByRole('button',{name:'Continue',exact:true}).click();
+  await page.evaluate(()=>{window.patchColour='#3b1f19';});
   await page.getByRole('button',{name:'Capture after photo'}).click();
   await enable(page);await capture(page);
   await page.getByRole('button',{name:'Use photo',exact:true}).click();
   await page.getByRole('button',{name:'Compare photos'}).click();
   await page.getByRole('button',{name:'Save to lesion history'}).click();
   await expect(page.getByText('Image colour difference')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Closest reference colour change'})).toBeVisible();
+  await expect(page.locator('.reference-matches')).toHaveText('Before 0→After 50');
+  const chart=page.getByRole('list',{name:'Patch colour reference chart'});
+  await expect(chart.getByRole('listitem')).toHaveText(['0','0.1','0.5','2.5','10','50','100','200']);
+  await expect(chart.locator('[aria-current="true"]')).toHaveText('50');
+  const downloadPromise=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download this record'}).click();
+  const download=await downloadPromise;
+  const exported=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(exported.results[0].referenceMatches).toEqual({before:'0',after:'50'});
   const saved=await page.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('tyrosense',1);r.onsuccess=()=>{const q=r.result.transaction('data').objectStore('data').get('workspace');q.onsuccess=()=>resolve(q.result);};}));
   expect(saved.results).toHaveLength(1);expect(saved.current).toBeNull();
   expect(saved.results[0].before.capture.squareDetected).toBe(true);

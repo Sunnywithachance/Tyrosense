@@ -166,3 +166,35 @@ dialog.camera-screen {
 @media (prefers-reduced-motion: reduce) {
   .patch-rotor { animation: none; }
 }
+.reference-matches {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 14px;
+  font-size: 13px;
+}
+.reference-scale {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 5px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.reference-chip {
+  display: block;
+  height: 24px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+  border: 1px solid #0002;
+}
+.reference-scale [aria-current] {
+  font-weight: 700;
+}
+.reference-scale [aria-current] .reference-chip {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}

@@ -1,5 +1,5 @@
 import {openCamera} from './camera.js';
-import {meanRGB,compareRGB,remainingSeconds,clock} from './analysis.js';
+import {meanRGB,compareRGB,matchPatchChange,patchColourReferences,remainingSeconds,clock} from './analysis.js';
 const $=s=>document.querySelector(s);
 const paths={menu:'M4 6h16M4 12h16M4 18h16',close:'M6 6l12 12M6 18L18 6',home:'M3 10l9-7 9 7v10H15v-6H9v6H3z',scan:'M8 3H4v5m12-5h4v5M4 16v5h4m12-5v5h-4',history:'M4 19V9m5 10V5m6 14v-7m5 7V3',lesions:'M3 21l2-7L16 3a3.5 3.5 0 0 1 5 5L10 19 3 21zM5 14l5 5M14 5l5 5',settings:'M19.02 9.09L19.43 10.40L21.59 10.56L21.59 13.44L19.43 13.60L19.02 14.91L18.38 16.12L19.80 17.76L17.76 19.80L16.12 18.38L14.91 19.02L13.60 19.43L13.44 21.59L10.56 21.59L10.40 19.43L9.09 19.02L7.88 18.38L6.24 19.80L4.20 17.76L5.62 16.12L4.98 14.91L4.57 13.60L2.41 13.44L2.41 10.56L4.57 10.40L4.98 9.09L5.62 7.88L4.20 6.24L6.24 4.20L7.88 5.62L9.09 4.98L10.40 4.57L10.56 2.41L13.44 2.41L13.60 4.57L14.91 4.98L16.12 5.62L17.76 4.20L19.80 6.24L18.38 7.88Z M15.2 12a3.2 3.2 0 1 1-6.4 0a3.2 3.2 0 1 1 6.4 0Z',plus:'M12 5v14M5 12h14',arrow:'M9 5l7 7-7 7',back:'M15 5l-7 7 7 7',camera:'M4 7h4l2-3h4l2 3h4v13H4zM12 10a4 4 0 1 0 0 8 4 4 0 0 0 0-8',clock:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18m0 4v6l4 2',info:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18m0 7v7m0-10v.1',check:'M5 12l4 4L19 6',export:'M12 15V3m-4 4l4-4 4 4M5 12v9h14v-9',calendar:'M4 5h16v16H4zM8 3v4m8-4v4M4 10h16',bell:'M6 8a6 6 0 0 1 12 0v7l2 3H4l2-3zM10 21h4',leaf:'M5 20C0 9 9 3 21 3c0 12-5 20-16 17zm0 0L16 8'};
 const icon=(n)=>`<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[n]||paths.info}"/></svg>`;
@@ -45,7 +45,7 @@ function openMenu(){
   },{once:true});
 }
 
-const notice=()=>`<p class="note">${icon('info')}<span>Research prototype. Photo comparisons are not a diagnosis. TYR activity estimates require validated calibration.</span></p>`;
+const notice=()=>`<p class="note">${icon('info')}<span>Research prototype for tracking patch colour changes.</span></p>`;
 function lesionName(lid){return state.lesions.find(l=>l.id===lid)?.name||'Removed lesion';}
 function empty(title,description,action,label){return `<div class="card empty"><div class="tile-icon">${icon('leaf')}</div><h3>${title}</h3><p class="sub">${description}</p>${action?`<button class="secondary" data-action="${action}">${icon('plus')}${label}</button>`:''}</div>`;}
 function resultRow(r){return `<button class="card row between record" data-result="${r.id}"><div class="row"><div class="tile-icon">${icon('scan')}</div><div><h3>${esc(lesionName(r.lesionId))}</h3><p class="small">${date(r.createdAt)}${r.demo?' · Sample data':''}</p></div></div><div><span class="badge">${r.comparison.distance.toFixed(1)} RGB</span></div></button>`;}
@@ -64,8 +64,37 @@ function launchCamera(kind){
   }});
 }
 
-function resultView(){const r=state.results.find(r=>r.id===selected)||draft.result;if(!r)return history();return `<div class="back-title"><button class="icon-btn" data-page="history" aria-label="Back to history">${icon('back')}</button><h2>Patch comparison</h2></div><span class="eyebrow">${r.demo?'Sample demonstration':esc(lesionName(r.lesionId))}</span><h1>A change,<br>captured.</h1><p class="sub spaced">${date(r.createdAt)} · ${r.elapsedMinutes.toFixed(1)} minutes between photos</p><div class="photo-pair"><figure><img src="${r.before.image}" alt="Before patch"><figcaption>BEFORE · baseline</figcaption></figure><figure><img src="${r.after.image}" alt="After patch"><figcaption>AFTER · reaction</figcaption></figure></div><div class="card"><div class="row between"><h3>Image colour difference</h3><span class="badge">Uncalibrated</span></div><div class="metric">${r.comparison.distance.toFixed(1)} <span style="font-size:13px;letter-spacing:0">RGB units</span></div><div class="row"><span class="swatch" style="background:rgb(${r.comparison.before.join(',')})"></span><span class="small">Before</span><span>→</span><span class="swatch" style="background:rgb(${r.comparison.after.join(',')})"></span><span class="small">After</span></div><p class="small spaced">Euclidean distance between mean RGB values in the central 40% of each photograph (0–441.7). Lighting, alignment, and camera settings affect this value. It is not a TYR concentration or risk score.</p></div><div class="card row"><div class="tile-icon">${icon('scan')}</div><div><h3>TYR activity</h3><p class="small">Pending validated calibration</p></div></div>${r.early?'<div class="inline-notice">Captured before the selected waiting period ended. Prototype test only.</div>':''}${draft.result===r?`<button class="primary" data-action="save-result">${icon('check')}Save to lesion history</button>`:`<button class="secondary" data-action="export-result">${icon('export')}Download this record</button>`}${notice()}`;}
-function settings(){return `<div class="page-title"><span class="eyebrow">Make it yours</span><h1>A little about<br>your workspace.</h1></div><div class="card"><h3>Your profile</h3><label class="field" for="profile-name">First name (optional)</label><input id="profile-name" class="input" value="${esc(state.name)}" maxlength="40" placeholder="Your name"><button class="secondary spaced" data-action="save-profile">Save profile</button></div><div class="card"><h3>Stored on this device</h3><p class="sub spaced">Photos and records stay in this browser’s local database. They are not uploaded or synced between devices. Clearing browser data removes them.</p><button class="secondary" data-action="export">${icon('export')}Download a backup</button></div><div class="card"><h3>About the analysis</h3><p class="sub spaced">The prototype compares average RGB colour in the centre of two photographs. The live camera can highlight square-shaped candidates as an alignment aid. It does not identify TyroSense patches, correct lighting, estimate enzyme activity, or classify melanoma risk.</p><p class="small">Next research step: a controlled imaging protocol and a validated colour-to-TYR calibration dataset.</p></div><button class="secondary" data-action="demo">Load a labelled sample comparison</button><button class="secondary danger spaced" data-action="clear">Delete all local records</button>${notice()}`;}
+function referenceCard(comparison) {
+  const {before,after}=matchPatchChange(comparison.before,comparison.after);
+  return `<section class="card" aria-labelledby="reference-heading">
+    <h3 id="reference-heading">Closest reference colour change</h3>
+    <p class="reference-matches"><span>Before <strong>${before}</strong></span><span aria-hidden="true">→</span><span>After <strong>${after}</strong></span></p>
+    <ol class="reference-scale" role="list" aria-label="Patch colour reference chart">
+      ${patchColourReferences.map(({label,rgb})=>`<li${label===after?' aria-current="true"':''}><span class="reference-chip" style="background:rgb(${rgb.join(',')})"></span><span>${label}</span></li>`).join('')}
+    </ol>
+    <p class="small">Your before photo sets the starting point at 0. The match uses the change between photos. For visual comparison only.</p>
+  </section>`;
+}
+function resultView(){
+  const r=state.results.find(r=>r.id===selected)||draft.result;
+  if(!r)return history();
+  const {before,after,distance}=r.comparison;
+  return `<div class="back-title"><button class="icon-btn" data-page="history" aria-label="Back to history">${icon('back')}</button><h2>Patch comparison</h2></div>
+    <span class="eyebrow">${r.demo?'Sample demonstration':esc(lesionName(r.lesionId))}</span>
+    <h1>A change,<br>captured.</h1>
+    <p class="sub spaced">${date(r.createdAt)} · ${r.elapsedMinutes.toFixed(1)} minutes between photos</p>
+    <div class="photo-pair"><figure><img src="${r.before.image}" alt="Before patch"><figcaption>BEFORE · baseline</figcaption></figure><figure><img src="${r.after.image}" alt="After patch"><figcaption>AFTER · reaction</figcaption></figure></div>
+    ${referenceCard(r.comparison)}
+    <div class="card">
+      <h3>Image colour difference</h3>
+      <div class="metric">${distance.toFixed(1)} <span style="font-size:13px;letter-spacing:0">RGB units</span></div>
+      <div class="row"><span class="swatch" style="background:rgb(${before.join(',')})"></span><span class="small">Before</span><span>→</span><span class="swatch" style="background:rgb(${after.join(',')})"></span><span class="small">After</span></div>
+      <p class="small spaced">Distance between the average colours in the central 40% of the two photographs.</p>
+    </div>
+    ${r.early?'<div class="inline-notice">Captured before the selected waiting period ended. Prototype test only.</div>':''}
+    ${draft.result===r?`<button class="primary" data-action="save-result">${icon('check')}Save to lesion history</button>`:`<button class="secondary" data-action="export-result">${icon('export')}Download this record</button>`}${notice()}`;
+}
+function settings(){return `<div class="page-title"><span class="eyebrow">Make it yours</span><h1>A little about<br>your workspace.</h1></div><div class="card"><h3>Your profile</h3><label class="field" for="profile-name">First name (optional)</label><input id="profile-name" class="input" value="${esc(state.name)}" maxlength="40" placeholder="Your name"><button class="secondary spaced" data-action="save-profile">Save profile</button></div><div class="card"><h3>Stored on this device</h3><p class="sub spaced">Photos and records stay in this browser’s local database. They are not uploaded or synced between devices. Clearing browser data removes them.</p><button class="secondary" data-action="export">${icon('export')}Download a backup</button></div><div class="card"><h3>About the analysis</h3><p class="sub spaced">The app samples the central 40% of each patch photo. It anchors the before photo at 0 and finds the reference swatch whose colour change is closest to the change seen in your after photo.</p><p class="small">Use consistent lighting, framing, and camera settings for colour comparisons.</p></div><button class="secondary" data-action="demo">Load a labelled sample comparison</button><button class="secondary danger spaced" data-action="clear">Delete all local records</button>${notice()}`;}
 function render(){const views={home,lesions,lesion:lesionView,history,test,result:resultView,settings};$('#app').innerHTML=`<div class="shell">${header()}<main>${(views[page]||home)()}</main></div>`;}
 function go(p){closeMenu();page=p;render();window.scrollTo({top:0,behavior:'instant'});}
 function modal(html){const d=document.createElement('dialog');d.innerHTML=html;document.body.append(d);d.addEventListener('close',()=>d.remove());d.showModal();d.querySelector('[data-close]')?.addEventListener('click',()=>d.close());return d;}
@@ -73,7 +102,16 @@ function confirmAction(title,description,action){const d=modal(`<h2>${title}</h2
 function addLesion(){const d=modal(`<form id="lesion-form"><h2>A new spot to follow</h2><label class="field" for="lesion-name">Lesion name</label><input class="input" id="lesion-name" required maxlength="60" placeholder="e.g. Shoulder mole"><label class="field" for="lesion-location">Body location</label><input class="input" id="lesion-location" required maxlength="80" placeholder="e.g. Left shoulder"><label class="field" for="lesion-notes">Notes (optional)</label><textarea class="input" id="lesion-notes" maxlength="1000" placeholder="Anything you would like to remember"></textarea><div class="dialog-actions"><button type="button" class="secondary" data-close>Cancel</button><button class="primary">Save lesion</button></div></form>`);d.querySelector('form').onsubmit=async e=>{e.preventDefault();const name=d.querySelector('#lesion-name').value.trim(),location=d.querySelector('#lesion-location').value.trim();if(!name||!location)return;const l={id:id(),name,location,notes:d.querySelector('#lesion-notes').value.trim(),photos:[],createdAt:Date.now(),reminder:''};state.lesions.push(l);try{await save();draft.lesionId=l.id;d.close();render();notify('Lesion registered.');}catch{state.lesions.pop();notify('Unable to save this lesion.');}};}
 async function photo(file){if(!file||!file.type.startsWith('image/'))throw Error('Choose an image file.');if(file.size>25*1024*1024)throw Error('Choose an image smaller than 25 MB.');const url=URL.createObjectURL(file);try{const img=new Image();img.src=url;await img.decode();const scale=Math.min(1,1200/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0,c.width,c.height);const w=Math.max(1,Math.floor(c.width*.4)),h=Math.max(1,Math.floor(c.height*.4));const rgb=meanRGB(ctx.getImageData(Math.floor((c.width-w)/2),Math.floor((c.height-h)/2),w,h).data);return {image:c.toDataURL('image/jpeg',.8),rgb,capturedAt:Date.now()};}finally{URL.revokeObjectURL(url);}}
 function download(name,data,type='application/json'){const blob=new Blob([data],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function report(results=state.results){return JSON.stringify({app:'TyroSense capstone prototype',exportedAt:new Date().toISOString(),analysis:'Uncalibrated central-region RGB distance. Not TYR concentration or diagnosis.',lesions:state.lesions,results},null,2);}
+function report(results=state.results){
+  return JSON.stringify({
+    app:'TyroSense capstone prototype',
+    exportedAt:new Date().toISOString(),
+    analysis:'The before photo anchors the 0 swatch. The closest reference label matches the signed RGB change between the central regions of the two photos.',
+    patchColourReferences,
+    lesions:state.lesions,
+    results:results.map(r=>({...r,referenceMatches:matchPatchChange(r.comparison.before,r.comparison.after)})),
+  },null,2);
+}
 function reminders(){const items=state.lesions.filter(l=>l.reminder).sort((a,b)=>a.reminder.localeCompare(b.reminder));modal(`<h2>A moment to check in</h2><p class="sub spaced">Choose a lesion’s follow-up date in its journal. Download a calendar file to receive reminders through your calendar app.</p>${items.length?items.map(l=>`<div class="card"><h3>${esc(l.name)}</h3><p class="small">${esc(l.reminder)}</p></div>`).join(''):'<p class="small spaced">No follow-up dates set yet.</p>'}<button class="primary" data-close>Done</button>`);}
 const actions={
 'open-menu':openMenu,'close-menu':closeMenu,

@@ -25,11 +25,11 @@ The supplied visual references use warm off-white surfaces, rounded cards, orang
 
 ## Prototype boundaries
 
-Any demonstration results must be clearly labelled as sample data. Converting image colour changes into enzyme activity values or clinical categories requires a validated calibration and interpretation method; these must not be inferred from the mockups.
+Demonstration results are labelled as sample data. The numbered swatches are visual reference labels. Clinical interpretation requires separate validation.
 
 ## Implementation status
 
-The repository contains a mobile-first browser prototype implemented with HTML, CSS, and JavaScript. It is a capstone demonstration, with TYR calibration still pending.
+The repository contains a mobile-first browser prototype implemented with HTML, CSS, and JavaScript for patch capture and reference colour matching.
 
 ## Run the prototype
 
@@ -53,7 +53,7 @@ npm test
 - Request camera permission explicitly, show square alignment guides and a green outline for stable square candidates, then review or retake the crop.
 - Offer camera switching, plus zoom and a camera light when supported by the device and browser.
 - Persist a reaction timer across page reloads using an absolute deadline.
-- Compare the mean RGB colour in the central 40% of each image.
+- Compare the mean RGB colour in the central 40% of each image and match the before-to-after change to the closest change on the eight-swatch reference chart.
 - Save comparisons and lesion photo journals in IndexedDB in the current browser.
 - Filter history by lesion and download JSON records, including photographs.
 - Choose follow-up dates and download calendar reminders.
@@ -64,14 +64,16 @@ The app uses no backend or cloud photo storage. Data is local to each browser an
 
 ## Analysis limits and next steps
 
-RGB distance is a descriptive image metric, not a calibrated enzyme activity measurement. The camera uses lightweight intensity and edge contours to highlight square-shaped candidates, with three-frame stability before showing green. This is an experimental alignment aid, not identification of a TyroSense patch. It can miss translucent patches or highlight unrelated squares. Detection needs testing on actual patches and representative lighting and skin tones. The prototype does not normalize lighting, register images, or classify lesions. It intentionally does not display numerical TYR concentrations or activity categories.
+The app uses the mean sRGB of the central 40% of each reference PNG under `Baseline_images/` (labels 0, 0.1, 0.5, 2.5, 10, 50, 100, and 200). It treats the before photo as the 0 starting point and compares the signed RGB change between the photos with the change from 0 to each reference swatch. The closest change by Euclidean distance supplies the after label. This visual comparison uses the RGB stored with each record, including previously saved records. JSON exports include the palette and the before and after labels.
 
-The next analysis milestone is a controlled imaging protocol, reference colours, a defined reaction region, and paired photographs with known TYR activities. Calibration and evaluation should use separate datasets, with uncertainty and image quality checks before activity ranges are shown.
+A shared additive colour shift cancels out of the comparison. Use consistent lighting, framing, and camera settings between photos. A small change in capture conditions can affect matches, particularly for references with similar colours.
+
+The camera uses lightweight intensity and edge contours to highlight square-shaped candidates, with three-frame stability before showing green. This experimental alignment aid can miss translucent patches or highlight unrelated squares. Detection needs testing on actual patches and representative lighting and skin tones.
 
 ## Source layout
 
 - `dist/`: directly served browser application; these are editable source files.
-- `dist/analysis.js`: descriptive colour comparison and timer functions.
+- `dist/analysis.js`: reference palette, colour comparison, and timer functions.
 - `server.mjs`: dependency-free local development server.
 - `tests/`: calculation and timer tests.
 - `.openai/hosting.json`: private Sites deployment configuration.
