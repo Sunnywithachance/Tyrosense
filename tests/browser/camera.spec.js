@@ -59,14 +59,22 @@ test('requests camera only after Enable; detects square, reviews, retakes and sa
   await page.getByRole('button',{name:'Use photo',exact:true}).click();
   await page.getByRole('button',{name:'Compare photos'}).click();
   await page.getByRole('button',{name:'Save to lesion history'}).click();
+  const downloadButton=page.getByRole('button',{name:'Download this record'});
+  await expect(downloadButton).toBeVisible();
   await expect(page.getByText('Image colour difference')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Closest reference colour change'})).toBeVisible();
   await expect(page.locator('.reference-matches')).toHaveText('Before 0→After 50');
   const chart=page.getByRole('list',{name:'Patch colour reference chart'});
   await expect(chart.getByRole('listitem')).toHaveText(['0','0.1','0.5','2.5','10','50','100','200']);
+  await expect(chart).toHaveAccessibleDescription(/50, 100, and 200/);
+  const box=await chart.evaluate(el=>{
+    const style=getComputedStyle(el,'::after');
+    return {column:style.gridColumnStart,border:style.borderTopColor,width:style.borderTopWidth};
+  });
+  expect(box).toEqual({column:'7',border:'rgb(174, 66, 60)',width:'1px'});
   await expect(chart.locator('[aria-current="true"]')).toHaveText('50');
   const downloadPromise=page.waitForEvent('download');
-  await page.getByRole('button',{name:'Download this record'}).click();
+  await downloadButton.click();
   const download=await downloadPromise;
   const exported=JSON.parse(await readFile(await download.path(),'utf8'));
   expect(exported.results[0].referenceMatches).toEqual({before:'0',after:'50'});

@@ -174,8 +174,9 @@ dialog.camera-screen {
   font-size: 13px;
 }
 .reference-scale {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 4px repeat(3, minmax(0, 1fr));
   gap: 5px;
   list-style: none;
   padding: 0;
@@ -183,6 +184,22 @@ dialog.camera-screen {
   text-align: center;
   font-size: 10px;
   font-variant-numeric: tabular-nums;
+}
+.reference-scale li:nth-child(6) {
+  grid-column: 7;
+}
+.reference-scale::after {
+  content: '';
+  position: absolute;
+  grid-column: 7 / -1;
+  grid-row: 1;
+  inset: -4px;
+  border: 1px solid #ae423c;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.reference-range-note {
+  margin-top: 6px;
 }
 .reference-chip {
   display: block;
@@ -197,4 +214,90 @@ dialog.camera-screen {
 .reference-scale [aria-current] .reference-chip {
   outline: 2px solid currentColor;
   outline-offset: 1px;
+}
+
+.reading-chart-unit {
+  margin-top: 6px;
+}
+.reading-chart-grid {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.reading-chart-axis {
+  position: relative;
+  font-size: 11px;
+  color: #65574a;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.reading-chart-axis span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+}
+.reading-chart-scroll {
+  overflow-x: auto;
+}
+.reading-chart-plot {
+  position: relative;
+  height: 178px;
+}
+.reading-chart-plot svg {
+  display: block;
+  width: 100%;
+  height: 158px;
+  fill: none;
+}
+.reading-chart-plot line {
+  stroke: var(--line);
+}
+.reading-chart-plot polyline {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+.reading-chart-point {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+}
+.reading-chart-point:focus-visible {
+  outline-offset: 0;
+}
+.reading-chart-value {
+  position: absolute;
+  top: 2px;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: #fdfcfa;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.reading-chart-dot {
+  width: 11px;
+  height: 11px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.reading-chart-date {
+  position: absolute;
+  top: 160px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  font-size: 10px;
+  color: #65574a;
+  white-space: nowrap;
 }
